@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Transaction on {{ transaction.date|date:"d.m.Y" }}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">{{ transaction.get_kind_display }} · {{ transaction.amount|floatformat:2 }} €</h1>
+
+<div class="card">
+  <ul class="list-group list-group-flush">
+    <li class="list-group-item d-flex justify-content-between"><span class="text-secondary">Date</span><span>{{ transaction.date|date:"d.m.Y" }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span class="text-secondary">Account</span><span>{{ transaction.account.name }}</span></li>
+    {% if transaction.transfer_to %}
+      <li class="list-group-item d-flex justify-content-between"><span class="text-secondary">Destination account</span><span>{{ transaction.transfer_to.name }}</span></li>
+    {% endif %}
+    <li class="list-group-item d-flex justify-content-between"><span class="text-secondary">Category</span><span>{{ transaction.category|default:"— uncategorized —" }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span class="text-secondary">Counterparty</span><span>{{ transaction.counterparty|default:"—" }}</span></li>
+    <li class="list-group-item d-flex justify-content-between"><span class="text-secondary">Source</span><span>{{ transaction.get_source_display }}</span></li>
+    {% if transaction.note %}
+      <li class="list-group-item"><div class="text-secondary mb-1">Note</div>{{ transaction.note|linebreaksbr }}</li>
+    {% endif %}
+  </ul>
+</div>
+<a href="{% url 'dashboard' %}" class="btn btn-link px-0 mt-3">← Back to dashboard</a>
+{% endblock %}

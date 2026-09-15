@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Category rules{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 mb-0">Category rules</h1>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'rules_apply' %}">
+      {% csrf_token %}
+      <button class="btn btn-outline-primary" type="submit">Apply to uncategorized</button>
+    </form>
+    <a href="{% url 'rule_create' %}" class="btn btn-primary">Add rule</a>
+  </div>
+</div>
+
+<p class="text-secondary">
+  Rules run while a statement is imported: the first match by priority sets the category.
+  A rule is skipped when its category type does not match the transaction type.
+</p>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr><th>Priority</th><th>Condition</th><th>Category</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+          <tr>
+            <td class="text-secondary">{{ rule.priority }}</td>
+            <td>{{ rule.get_match_field_display }} {{ rule.get_match_type_display|lower }} “{{ rule.pattern }}”</td>
+            <td>{{ rule.category }}</td>
+            <td>
+              {% if rule.is_active %}<span class="badge text-bg-success">active</span>
+              {% else %}<span class="badge text-bg-secondary">disabled</span>{% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'rule_update' rule.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <a href="{% url 'rule_delete' rule.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary p-3">No rules yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

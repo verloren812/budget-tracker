@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <div class="d-flex align-items-baseline gap-3">
+    <h1 class="h3 mb-0">Dashboard</h1>
+    <span class="text-secondary">{{ today|date:"F Y" }}</span>
+  </div>
+  <a href="{% url 'transaction_create' %}" class="btn btn-primary">Add transaction</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="text-secondary small">Total on accounts</div>
+      <div class="fs-4 fw-semibold">{{ total_balance|floatformat:2 }} €</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="text-secondary small">Income this month</div>
+      <div class="fs-4 fw-semibold text-success">{{ month_income|floatformat:2 }} €</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="text-secondary small">Expenses this month</div>
+      <div class="fs-4 fw-semibold text-danger">{{ month_expense|floatformat:2 }} €</div>
+    </div></div>
+  </div>
+  <div class="col-md-3">
+    <div class="card h-100"><div class="card-body">
+      <div class="text-secondary small">Result this month</div>
+      <div class="fs-4 fw-semibold">{{ month_result|floatformat:2 }} €</div>
+    </div></div>
+  </div>
+</div>
+
+{% if forecast.upcoming %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <div class="text-secondary small">Forecast balance on {{ forecast.end_of_month|date:"d.m.Y" }}</div>
+        <div class="fs-4 fw-semibold">{{ forecast.forecast|floatformat:2 }} €</div>
+        <div class="text-secondary small">
+          {{ forecast.balance_now|floatformat:2 }} € now, {{ forecast.expected_expense|floatformat:2 }} €
+          still due from recurring payments
+        </div>
+      </div>
+      <a href="{% url 'recurring_list' %}" class="btn btn-outline-secondary">Recurring payments</a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold">Accounts</div>
+      <ul class="list-group list-group-flush">
+        {% for account in accounts %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ account.get_absolute_url }}" class="text-decoration-none">{{ account.name }}</a>
+            <span class="fw-semibold">{{ account.balance|floatformat:2 }} {{ account.currency }}</span>
+          </li>
+        {% empty %}
+          <li class="list-group-item text-secondary">
+            No accounts yet — <a href="{% url 'account_create' %}">add the first one</a>.
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold">Latest transactions</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr><th>Date</th><th>Category</th><th>Account</th><th class="text-end">Amount</th></tr>
+          </thead>
+          <tbody>
+            {% for tx in last_transactions %}
+              <tr>
+                <td><a href="{{ tx.get_absolute_url }}" class="text-decoration-none">{{ tx.date|date:"d.m.Y" }}</a></td>
+                <td>{{ tx.category|default:"— uncategorized —" }}</td>
+                <td class="text-secondary">{{ tx.account.name }}</td>
+                <td class="text-end {% if tx.kind == 'income' %}text-success{% elif tx.kind == 'expense' %}text-danger{% endif %}">
+                  {{ tx.signed_amount|floatformat:2 }} €
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-secondary">No transactions yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if budgets %}
+<div class="card mt-3">
+  <div class="card-header bg-white fw-semibold">Budgets for this month</div>
+  <ul class="list-group list-group-flush">
+    {% for budget in budgets %}
+      <li class="list-group-item">
+        <div class="d-flex justify-content-between small mb-1">
+          <span>{{ budget.category }}</span>
+          <span>{{ budget.spent|floatformat:2 }} / {{ budget.limit|floatformat:2 }} €</span>
+        </div>
+        <div class="progress" style="height:8px">
+          <div class="progress-bar {% if budget.progress > 100 %}bg-danger{% elif budget.progress > 80 %}bg-warning{% endif %}"
+               style="width: {% if budget.progress > 100 %}100{% else %}{{ budget.progress }}{% endif %}%"></div>
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

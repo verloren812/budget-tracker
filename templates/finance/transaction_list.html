@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Transactions{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 mb-0">Transactions</h1>
+  <div class="d-flex gap-2">
+    <a href="{% url 'transaction_export' %}{% querystring page=None %}" class="btn btn-outline-secondary">Export CSV</a>
+    <a href="{% url 'transaction_create' %}" class="btn btn-primary">Add transaction</a>
+  </div>
+</div>
+
+<form method="get" class="card card-body mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label small mb-1">{{ filter_form.q.label }}</label>{{ filter_form.q }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">{{ filter_form.kind.label }}</label>{{ filter_form.kind }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">{{ filter_form.account.label }}</label>{{ filter_form.account }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">{{ filter_form.category.label }}</label>{{ filter_form.category }}
+    </div>
+    <div class="col-md-1">
+      <label class="form-label small mb-1">{{ filter_form.date_from.label }}</label>{{ filter_form.date_from }}
+    </div>
+    <div class="col-md-1">
+      <label class="form-label small mb-1">{{ filter_form.date_to.label }}</label>{{ filter_form.date_to }}
+    </div>
+    <div class="col-md-1 d-grid">
+      <button class="btn btn-outline-primary" type="submit">Search</button>
+    </div>
+  </div>
+  <div class="d-flex align-items-center gap-3 mt-2">
+    <div class="form-check mb-0">
+      {{ filter_form.only_uncategorized }}
+      <label class="form-check-label small" for="{{ filter_form.only_uncategorized.id_for_label }}">
+        {{ filter_form.only_uncategorized.label }}
+      </label>
+    </div>
+    {% if request.GET %}
+      <a href="{% url 'transaction_list' %}" class="small">Reset filters</a>
+    {% endif %}
+  </div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card card-body py-2">
+    <span class="text-secondary small">Transactions found</span><span class="fs-5 fw-semibold">{{ found }}</span>
+  </div></div>
+  <div class="col-md-4"><div class="card card-body py-2">
+    <span class="text-secondary small">Income in selection</span><span class="fs-5 fw-semibold text-success">{{ total_income|floatformat:2 }} €</span>
+  </div></div>
+  <div class="col-md-4"><div class="card card-body py-2">
+    <span class="text-secondary small">Expenses in selection</span><span class="fs-5 fw-semibold text-danger">{{ total_expense|floatformat:2 }} €</span>
+  </div></div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Date</th><th>Type</th><th>Category</th><th>Account</th>
+          <th>Counterparty</th><th class="text-end">Amount</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+          <tr>
+            <td><a href="{{ tx.get_absolute_url }}" class="text-decoration-none">{{ tx.date|date:"d.m.Y" }}</a></td>
+            <td>{{ tx.get_kind_display }}</td>
+            <td>{% if tx.category %}{{ tx.category }}{% else %}<span class="text-warning-emphasis">uncategorized</span>{% endif %}</td>
+            <td class="text-secondary">
+              {{ tx.account.name }}{% if tx.transfer_to %} → {{ tx.transfer_to.name }}{% endif %}
+            </td>
+            <td class="text-secondary">{{ tx.counterparty|default:"—" }}</td>
+            <td class="text-end {% if tx.kind == 'income' %}text-success{% elif tx.kind == 'expense' %}text-danger{% endif %}">
+              {{ tx.signed_amount|floatformat:2 }} €
+            </td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'transaction_update' tx.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <a href="{% url 'transaction_delete' tx.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-secondary p-3">Nothing found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if is_paginated %}
+  <nav class="mt-3">
+    <ul class="pagination pagination-sm mb-0">
+      {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="{% querystring page=page_obj.previous_page_number %}">←</a></li>
+      {% endif %}
+      <li class="page-item disabled">
+        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+      </li>
+      {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="{% querystring page=page_obj.next_page_number %}">→</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+{% endif %}
+{% endblock %}

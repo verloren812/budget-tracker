@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 mb-0">Categories</h1>
+  <a href="{% url 'category_create' %}" class="btn btn-primary">Add category</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr><th></th><th>Name</th><th>Type</th><th>Parent</th><th class="text-end">Transactions</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for category in categories %}
+          <tr>
+            <td style="width:24px">
+              <span class="d-inline-block rounded-circle" style="width:14px;height:14px;background:{{ category.color }}"></span>
+            </td>
+            <td>{{ category.name }}</td>
+            <td class="text-secondary">{{ category.get_kind_display }}</td>
+            <td class="text-secondary">{{ category.parent.name|default:"—" }}</td>
+            <td class="text-end text-secondary">{{ category.tx_count }}</td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'category_update' category.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <a href="{% url 'category_delete' category.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="text-secondary p-3">No categories yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Column mapping{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-baseline justify-content-between mb-3">
+  <h1 class="h3 mb-0">Column mapping</h1>
+  <a href="{% url 'import_upload' %}" class="btn btn-link px-0">Upload a different file</a>
+</div>
+
+<div class="alert alert-light border">
+  <div class="row small">
+    <div class="col-md-3"><span class="text-secondary">File:</span> <strong>{{ file_name }}</strong></div>
+    <div class="col-md-3"><span class="text-secondary">Account:</span> <strong>{{ account.name }}</strong></div>
+    <div class="col-md-2"><span class="text-secondary">Rows:</span> <strong>{{ rows_total }}</strong></div>
+    <div class="col-md-2"><span class="text-secondary">Encoding:</span> <strong>{{ parsed.encoding }}</strong></div>
+    <div class="col-md-2"><span class="text-secondary">Delimiter:</span> <strong>“{{ parsed.delimiter }}”</strong></div>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="card card-body mb-3">
+    <div class="row g-3">
+      <div class="col-md-2">
+        <label class="form-label small mb-1">{{ form.date.label }}</label>{{ form.date }}
+        {% for error in form.date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">{{ form.amount.label }}</label>{{ form.amount }}
+        {% for error in form.amount.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1">{{ form.counterparty.label }}</label>{{ form.counterparty }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">{{ form.note.label }}</label>{{ form.note }}
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small mb-1">{{ form.sign_mode.label }}</label>{{ form.sign_mode }}
+      </div>
+    </div>
+    <div class="d-flex gap-2 mt-3">
+      <button type="submit" class="btn btn-outline-primary">Refresh preview</button>
+      <button type="submit" name="commit" value="1" class="btn btn-primary">Import everything</button>
+    </div>
+  </div>
+
+  {% if preview %}
+    <div class="card">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Preview: first {{ preview_limit }} rows of {{ rows_total }}</span>
+        <span class="text-secondary small">Duplicates and rows with errors are skipped on import</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>#</th><th>Date</th><th>Type</th><th class="text-end">Amount</th>
+              <th>Counterparty</th><th>Reference</th><th>Category</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in preview %}
+              <tr class="{% if not row.is_valid %}table-danger{% elif row.is_duplicate %}table-warning{% endif %}">
+                <td class="text-secondary">{{ row.number }}</td>
+                <td>{{ row.date|date:"d.m.Y"|default:"—" }}</td>
+                <td>{% if row.kind == 'income' %}Income{% elif row.kind == 'expense' %}Expense{% else %}—{% endif %}</td>
+                <td class="text-end">{% if row.amount %}{{ row.amount|floatformat:2 }} €{% else %}—{% endif %}</td>
+                <td class="text-secondary">{{ row.counterparty|default:"—"|truncatechars:30 }}</td>
+                <td class="text-secondary">{{ row.note|default:"—"|truncatechars:40 }}</td>
+                <td>{{ row.category_name|default:"—" }}</td>
+                <td class="small">
+                  {% if not row.is_valid %}
+                    <span class="text-danger">{{ row.errors|join:", " }}</span>
+                  {% elif row.is_duplicate %}
+                    <span class="text-warning-emphasis">already imported</span>
+                  {% else %}
+                    <span class="text-success">will be imported</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</form>
+{% endblock %}

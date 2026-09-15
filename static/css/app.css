@@ -1,0 +1,16 @@
+body {
+  font-size: 15px;
+}
+
+.card {
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: .75rem;
+}
+
+.navbar-brand {
+  letter-spacing: -.01em;
+}
+
+.table > :not(caption) > * > * {
+  padding: .6rem .75rem;
+}

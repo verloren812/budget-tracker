@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ account.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-baseline justify-content-between mb-3">
+  <h1 class="h3 mb-0">{{ account.name }}</h1>
+  <span class="fs-4 fw-semibold">{{ account.balance|floatformat:2 }} {{ account.currency }}</span>
+</div>
+<p class="text-secondary">{{ account.get_kind_display }} · initial balance {{ account.initial_balance|floatformat:2 }} {{ account.currency }}</p>
+
+<div class="card">
+  <div class="card-header bg-white fw-semibold">Transactions on this account</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr><th>Date</th><th>Type</th><th>Category</th><th>Counterparty</th><th class="text-end">Amount</th></tr>
+      </thead>
+      <tbody>
+        {% for tx in transactions %}
+          <tr>
+            <td><a href="{{ tx.get_absolute_url }}" class="text-decoration-none">{{ tx.date|date:"d.m.Y" }}</a></td>
+            <td>{{ tx.get_kind_display }}</td>
+            <td>{{ tx.category|default:"—" }}</td>
+            <td class="text-secondary">{{ tx.counterparty|default:"—" }}</td>
+            <td class="text-end">{{ tx.signed_amount|floatformat:2 }} €</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary">No transactions.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<a href="{% url 'dashboard' %}" class="btn btn-link px-0 mt-3">← Back to dashboard</a>
+{% endblock %}

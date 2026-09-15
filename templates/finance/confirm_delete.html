@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Delete{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body p-4">
+        <h1 class="h5 mb-3">Delete “{{ object }}”?</h1>
+        <p class="text-secondary">This action cannot be undone.</p>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Delete</button>
+          <a href="{{ view.success_url }}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

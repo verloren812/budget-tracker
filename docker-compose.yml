@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: budget
+      POSTGRES_USER: budget
+      POSTGRES_PASSWORD: budget
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budget"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    environment:
+      DJANGO_SECRET_KEY: dev-insecure-key-change-me
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost
+      DB_NAME: budget
+      DB_USER: budget
+      DB_PASSWORD: budget
+      DB_HOST: db
+      DB_PORT: "5432"
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

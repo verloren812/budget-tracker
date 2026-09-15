@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Budgets{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 mb-0">Budgets</h1>
+  <div class="d-flex gap-2">
+    <form method="post" action="{% url 'budget_copy' %}">
+      {% csrf_token %}
+      <button class="btn btn-outline-primary" type="submit">Copy to next month</button>
+    </form>
+    <a href="{% url 'budget_create' %}" class="btn btn-primary">Add budget</a>
+  </div>
+</div>
+
+<div class="card">
+  <ul class="list-group list-group-flush">
+    {% for budget in budgets %}
+      <li class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div>
+            <span class="fw-semibold">{{ budget.category }}</span>
+            <span class="text-secondary small ms-2">{{ budget.month|date:"F Y" }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-3">
+            <span class="small">{{ budget.spent|floatformat:2 }} / {{ budget.limit|floatformat:2 }} €</span>
+            <span class="text-nowrap">
+              <a href="{% url 'budget_update' budget.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <a href="{% url 'budget_delete' budget.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </span>
+          </div>
+        </div>
+        <div class="progress" style="height:8px">
+          <div class="progress-bar {% if budget.progress > 100 %}bg-danger{% elif budget.progress > 80 %}bg-warning{% endif %}"
+               style="width: {% if budget.progress > 100 %}100{% else %}{{ budget.progress }}{% endif %}%"></div>
+        </div>
+        {% if budget.progress > 100 %}
+          <div class="small text-danger mt-1">Limit exceeded</div>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li class="list-group-item text-secondary">No budgets yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

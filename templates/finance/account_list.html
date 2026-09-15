@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Accounts{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h1 class="h3 mb-0">Accounts</h1>
+  <a href="{% url 'account_create' %}" class="btn btn-primary">Add account</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table align-middle mb-0">
+      <thead class="table-light">
+        <tr><th>Name</th><th>Type</th><th class="text-end">Initial balance</th><th class="text-end">Current balance</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for account in accounts %}
+          <tr class="{% if account.is_archived %}opacity-50{% endif %}">
+            <td>
+              <a href="{{ account.get_absolute_url }}" class="text-decoration-none">{{ account.name }}</a>
+              {% if account.is_archived %}<span class="badge text-bg-secondary ms-1">archived</span>{% endif %}
+            </td>
+            <td class="text-secondary">{{ account.get_kind_display }}</td>
+            <td class="text-end text-secondary">{{ account.initial_balance|floatformat:2 }} {{ account.currency }}</td>
+            <td class="text-end fw-semibold">{{ account.balance|floatformat:2 }} {{ account.currency }}</td>
+            <td class="text-end text-nowrap">
+              <a href="{% url 'account_update' account.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+              <a href="{% url 'account_delete' account.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="text-secondary p-3">No accounts yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

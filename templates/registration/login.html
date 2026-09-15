@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h1 class="h4 mb-3">Log in</h1>
+        {% if form.errors %}
+          <div class="alert alert-danger">Wrong username or password.</div>
+        {% endif %}
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.username.id_for_label }}">Username</label>
+            <input type="text" name="username" id="{{ form.username.id_for_label }}" class="form-control" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.password.id_for_label }}">Password</label>
+            <input type="password" name="password" id="{{ form.password.id_for_label }}" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Log in</button>
+        </form>
+        <p class="text-secondary small mt-3 mb-0">
+          No account yet? <a href="{% url 'signup' %}">Sign up</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

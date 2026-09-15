@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Statement import{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Statement import</h1>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% include "finance/_form.html" %}
+          <button type="submit" class="btn btn-primary">Next: map the columns</button>
+        </form>
+        <hr>
+        <p class="text-secondary small mb-0">
+          A CSV export from online banking works. The encoding and the delimiter are
+          detected automatically and the columns are guessed from the header; the next
+          step lets you correct them and preview the result before anything is written.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header bg-white fw-semibold">Recent uploads</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr><th>File</th><th>Account</th><th class="text-end">Imported</th><th class="text-end">Duplicates</th></tr>
+          </thead>
+          <tbody>
+            {% for batch in batches %}
+              <tr>
+                <td><a href="{% url 'import_batch_detail' batch.pk %}" class="text-decoration-none">{{ batch.file_name }}</a>
+                  <div class="text-secondary small">{{ batch.uploaded_at|date:"d.m.Y H:i" }}</div>
+                </td>
+                <td class="text-secondary">{{ batch.account.name }}</td>
+                <td class="text-end fw-semibold">{{ batch.rows_imported }}</td>
+                <td class="text-end text-secondary">{{ batch.rows_skipped }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-secondary p-3">No uploads yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
