@@ -128,11 +128,10 @@ already charged on the 5th, it is not subtracted a second time.
 - **Access control is applied at queryset level** (`filter(user=request.user)`) rather than
   checked after fetching an object, so foreign records return 404 instead of leaking.
 
-## Possible next steps
+## Possible next 
 
-1. Screenshots in the README and an "about" page
-2. Multi-currency support (currently EUR only, deliberately)
-3. Creating categorization rules directly from the list of uncategorized transactions
+1. Multi-currency support (currently EUR only, deliberately)
+2. Creating categorization rules directly from the list of uncategorized transactions
 
 ## License
 
