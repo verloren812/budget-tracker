@@ -34,6 +34,7 @@ venv\Scripts\activate           # Windows
 source venv/bin/activate        # Linux / macOS
 pip install -r requirements.txt
 
+copy .env.example .env          # Windows (cp on Linux / macOS)
 python manage.py migrate
 python manage.py demo_data      # 12 months of demo data, login demo / demo12345
 python manage.py createsuperuser
@@ -42,12 +43,17 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000/ for the app and http://127.0.0.1:8000/admin/ for the admin site.
 
-SQLite is used by default. To switch to PostgreSQL, copy `.env.example` to `.env`
-and fill in the `DB_*` variables.
+Settings are read from `.env` on startup (variables already set in the environment win).
+`.env.example` enables debug mode for local development; without `DJANGO_SECRET_KEY` a
+random key is generated per run. On a server set `DJANGO_DEBUG=0` (the default) and a real
+`DJANGO_SECRET_KEY` — with debug off the app refuses to start without a key.
+
+SQLite is used by default. To switch to PostgreSQL, fill in the `DB_*` variables in `.env`.
 
 ## Run with Docker
 
 ```bash
+cp .env.example .env
 docker compose up --build
 docker compose exec web python manage.py demo_data
 ```
@@ -125,6 +131,8 @@ already charged on the 5th, it is not subtracted a second time.
   two real transactions, not a duplicate, so identical rows within a file are numbered
   `0`, `1`, `2`… Re-importing the same file reproduces that numbering and both rows are
   correctly recognised as duplicates.
+- **Transfers only between accounts in the same currency** — there are no exchange rates,
+  so a cross-currency transfer is rejected instead of moving 100 EUR as 100 USD.
 - **Access control is applied at queryset level** (`filter(user=request.user)`) rather than
   checked after fetching an object, so foreign records return 404 instead of leaking.
 

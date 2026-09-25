@@ -112,19 +112,23 @@ def detect(user, today: date | None = None) -> list[Candidate]:
 
 
 def sync(user, today: date | None = None) -> dict:
-    """Persist the detected candidates. Ones the user dismissed stay dismissed."""
+    """Persist the detected candidates. Ones the user dismissed stay dismissed.
+
+    A payment is identified by counterparty *and* type: the same shop can be both a
+    regular expense and a regular income (e.g. refunds), and those are two records.
+    """
     found = detect(user, today)
     existing = {
-        payment.counterparty.strip().lower(): payment
+        (payment.counterparty.strip().lower(), payment.kind): payment
         for payment in RecurringPayment.objects.filter(user=user)
     }
 
     created = updated = 0
     for candidate in found:
-        key = candidate.counterparty.strip().lower()
+        key = (candidate.counterparty.strip().lower(), candidate.kind)
         payment = existing.get(key)
         if payment is None:
-            RecurringPayment.objects.create(
+            existing[key] = RecurringPayment.objects.create(
                 user=user,
                 counterparty=candidate.counterparty,
                 kind=candidate.kind,
@@ -140,7 +144,6 @@ def sync(user, today: date | None = None) -> dict:
         if payment.is_dismissed:
             continue
 
-        payment.kind = candidate.kind
         payment.avg_amount = candidate.avg_amount
         payment.day_of_month = candidate.day_of_month
         payment.period_days = candidate.period_days
@@ -179,9 +182,9 @@ def forecast(user, today: date | None = None) -> dict:
         Transaction.objects.for_user(user)
         .filter(date__year=today.year, date__month=today.month)
         .exclude(counterparty="")
-        .values_list("counterparty", flat=True)
+        .values_list("counterparty", "kind")
     )
-    already_seen = {name.strip().lower() for name in already_seen}
+    already_seen = {(name.strip().lower(), kind) for name, kind in already_seen}
 
     upcoming: list[dict] = []
     expected_income = expected_expense = ZERO
@@ -192,7 +195,7 @@ def forecast(user, today: date | None = None) -> dict:
             continue
         if payment.day_of_month <= today.day:
             continue
-        if payment.counterparty.strip().lower() in already_seen:
+        if (payment.counterparty.strip().lower(), payment.kind) in already_seen:
             continue
 
         day = min(payment.day_of_month, end_of_month.day)

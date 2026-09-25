@@ -3,11 +3,30 @@
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# The secret key comes from .env; the fallback exists only for local runs.
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-insecure-key-change-me")
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+# Read settings from the .env file next to manage.py. Variables that are already
+# set in the real environment (e.g. by Docker or the server) take precedence.
+load_dotenv(BASE_DIR / ".env")
+
+# Debug mode is off unless explicitly enabled, so a forgotten setting never
+# exposes error pages with internal details to visitors.
+DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY is not set. Copy .env.example to .env and set a secret key."
+        )
+    # Local development only: a random key per process, never a shared one in the code.
+    # Sessions are reset on every restart, which is fine while developing.
+    SECRET_KEY = get_random_secret_key()
+
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
 INSTALLED_APPS = [

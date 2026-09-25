@@ -9,6 +9,7 @@ Key design decisions:
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Q, Sum
@@ -226,6 +227,24 @@ class Transaction(models.Model):
     def get_absolute_url(self):
         return reverse("transaction_detail", args=[self.pk])
 
+    def clean(self):
+        # There are no exchange rates in the app, so money may only move between
+        # accounts in the same currency; otherwise 100 EUR would silently become 100 USD.
+        if (
+            self.kind == self.Kind.TRANSFER
+            and self.account_id
+            and self.transfer_to_id
+            and self.account.currency != self.transfer_to.currency
+        ):
+            raise ValidationError(
+                {
+                    "transfer_to": (
+                        f"Transfers between accounts in different currencies are not "
+                        f"supported ({self.account.currency} → {self.transfer_to.currency})."
+                    )
+                }
+            )
+
     @property
     def signed_amount(self) -> Decimal:
         """Amount with a sign, for display only."""
@@ -380,8 +399,10 @@ class RecurringPayment(models.Model):
         verbose_name_plural = "recurring payments"
         ordering = ["-avg_amount"]
         constraints = [
+            # One counterparty can be both a regular expense and a regular income
+            # (e.g. refunds from a shop), so the type is part of the key.
             models.UniqueConstraint(
-                fields=["user", "counterparty"], name="unique_recurring_per_user"
+                fields=["user", "counterparty", "kind"], name="unique_recurring_per_user"
             )
         ]
 

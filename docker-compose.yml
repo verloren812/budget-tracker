@@ -15,10 +15,9 @@ services:
 
   web:
     build: .
+    # DJANGO_SECRET_KEY, DJANGO_DEBUG and DJANGO_ALLOWED_HOSTS come from .env
+    env_file: .env
     environment:
-      DJANGO_SECRET_KEY: dev-insecure-key-change-me
-      DJANGO_DEBUG: "1"
-      DJANGO_ALLOWED_HOSTS: 127.0.0.1,localhost
       DB_NAME: budget
       DB_USER: budget
       DB_PASSWORD: budget

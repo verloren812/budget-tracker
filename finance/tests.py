@@ -165,6 +165,42 @@ class TransactionFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("account", form.errors)
 
+    def test_transfer_between_currencies_rejected(self):
+        """Without exchange rates 100 EUR must not silently turn into 100 USD."""
+        dollars = Account.objects.create(user=self.user, name="USD card", currency="USD")
+        form = self.form(kind=Transaction.Kind.TRANSFER, category="", transfer_to=dollars.pk)
+        self.assertFalse(form.is_valid())
+        self.assertIn("transfer_to", form.errors)
+
+
+class AccountCurrencyTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("holder", password="pass12345")
+        self.card = Account.objects.create(user=self.user, name="Card")
+        self.cash = Account.objects.create(user=self.user, name="Cash")
+
+    def form(self, account, currency):
+        from .forms import AccountForm
+
+        data = {
+            "name": account.name, "kind": account.kind, "currency": currency,
+            "initial_balance": "0.00",
+        }
+        return AccountForm(data=data, instance=account, user=self.user)
+
+    def test_currency_can_change_without_transfers(self):
+        self.assertTrue(self.form(self.card, "USD").is_valid())
+
+    def test_currency_change_blocked_by_existing_transfer(self):
+        Transaction.objects.create(
+            user=self.user, account=self.card, transfer_to=self.cash,
+            kind=Transaction.Kind.TRANSFER, amount=Decimal("10.00"), date=date(2026, 5, 1),
+        )
+        for account in (self.card, self.cash):
+            form = self.form(account, "USD")
+            self.assertFalse(form.is_valid())
+            self.assertIn("currency", form.errors)
+
 
 class TransactionListTests(TestCase):
     def setUp(self):
@@ -664,6 +700,27 @@ class RecurringDetectionTests(TestCase):
         second = self.recurring.sync(self.user, self.today)
         self.assertEqual((second["created"], second["updated"]), (0, 1))
         self.assertEqual(RecurringPayment.objects.filter(user=self.user).count(), 1)
+
+    def test_same_counterparty_as_income_and_expense(self):
+        """Regular purchases and regular refunds from one shop are two separate records."""
+        for month in (3, 4, 5, 6):
+            self.add(date(2026, month, 5), "30.00", "Amazon")
+            self.add(date(2026, month, 20), "10.00", "Amazon", Transaction.Kind.INCOME)
+        result = self.recurring.sync(self.user, self.today)
+        self.assertEqual((result["found"], result["created"]), (2, 2))
+        kinds = set(RecurringPayment.objects.filter(user=self.user).values_list("kind", flat=True))
+        self.assertEqual(kinds, {Transaction.Kind.INCOME, Transaction.Kind.EXPENSE})
+
+        again = self.recurring.sync(self.user, self.today)
+        self.assertEqual((again["created"], again["updated"]), (0, 2))
+
+    def test_scan_view_with_income_and_expense_from_same_counterparty(self):
+        for month in (3, 4, 5, 6):
+            self.add(date(2026, month, 5), "30.00", "Amazon")
+            self.add(date(2026, month, 20), "10.00", "Amazon", Transaction.Kind.INCOME)
+        self.client.force_login(self.user)
+        response = self.client.post(reverse("recurring_scan"))
+        self.assertEqual(response.status_code, 302)
 
     def test_dismissed_payment_is_not_resurrected(self):
         for month in (3, 4, 5, 6):

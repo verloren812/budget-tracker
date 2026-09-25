@@ -5,6 +5,7 @@ in a POST request could attach a transaction to somebody else's account.
 """
 
 from django import forms
+from django.db.models import Q
 
 from .models import Account, Budget, Category, CategoryRule, Transaction
 
@@ -107,6 +108,24 @@ class AccountForm(OwnedFormMixin, forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError("An account with this name already exists.")
         return name
+
+    def clean_currency(self):
+        currency = self.cleaned_data["currency"].strip().upper()
+        if self.instance.pk and currency != self.instance.currency:
+            # Changing the currency must not turn existing transfers into cross-currency ones.
+            linked = Transaction.objects.filter(
+                Q(account=self.instance, transfer_to__isnull=False)
+                | Q(transfer_to=self.instance),
+                kind=Transaction.Kind.TRANSFER,
+            )
+            for tx in linked.select_related("account", "transfer_to"):
+                other = tx.transfer_to if tx.account_id == self.instance.pk else tx.account
+                if other.currency != currency:
+                    raise forms.ValidationError(
+                        f"This account has transfers with “{other.name}” ({other.currency}); "
+                        "the currency cannot be changed to a different one."
+                    )
+        return currency
 
 
 class CategoryForm(OwnedFormMixin, forms.ModelForm):
@@ -292,8 +311,6 @@ class TransactionFilterForm(BootstrapMixin, forms.Form):
             return queryset
         data = self.cleaned_data
         if data.get("q"):
-            from django.db.models import Q
-
             queryset = queryset.filter(
                 Q(counterparty__icontains=data["q"]) | Q(note__icontains=data["q"])
             )
