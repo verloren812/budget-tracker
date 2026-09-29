@@ -56,6 +56,34 @@ class Account(models.Model):
     def get_absolute_url(self):
         return reverse("account_detail", args=[self.pk])
 
+    def clean(self):
+        # Lives on the model so the user form and the admin share the same rule.
+        self.currency = (self.currency or "").strip().upper()
+        if not self.pk:
+            return
+        old_currency = (
+            Account.objects.filter(pk=self.pk).values_list("currency", flat=True).first()
+        )
+        if old_currency is None or old_currency == self.currency:
+            return
+        # There are no exchange rates, so changing the currency of an account that
+        # took part in a transfer would silently turn 100 EUR into 100 USD.
+        transfers = Transaction.objects.filter(
+            Q(account=self) | Q(transfer_to=self), kind=Transaction.Kind.TRANSFER
+        ).select_related("account", "transfer_to")
+        for tx in transfers:
+            other = tx.transfer_to if tx.account_id == self.pk else tx.account
+            if other is not None and other.currency != self.currency:
+                raise ValidationError(
+                    {
+                        "currency": (
+                            f"This account has transfers with “{other.name}” "
+                            f"({other.currency}); the currency cannot be changed "
+                            f"to {self.currency}."
+                        )
+                    }
+                )
+
     @property
     def balance(self) -> Decimal:
         """Current balance = initial balance + everything the transactions moved."""

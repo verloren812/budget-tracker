@@ -34,7 +34,7 @@ venv\Scripts\activate           # Windows
 source venv/bin/activate        # Linux / macOS
 pip install -r requirements.txt
 
-copy .env.example .env          # Windows (cp on Linux / macOS)
+copy .env.example .env          # Windows (cp on Linux / macOS), then see below
 python manage.py migrate
 python manage.py demo_data      # 12 months of demo data, login demo / demo12345
 python manage.py createsuperuser
@@ -43,17 +43,27 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000/ for the app and http://127.0.0.1:8000/admin/ for the admin site.
 
+### Settings (`.env`)
+
 Settings are read from `.env` on startup (variables already set in the environment win).
-`.env.example` enables debug mode for local development; without `DJANGO_SECRET_KEY` a
-random key is generated per run. On a server set `DJANGO_DEBUG=0` (the default) and a real
-`DJANGO_SECRET_KEY` — with debug off the app refuses to start without a key.
+The template is safe for a server: debug mode is **off** (`DJANGO_DEBUG=0`), and with debug
+off the app refuses to start without `DJANGO_SECRET_KEY`.
+
+For **local development** edit your `.env` after copying it and choose one of:
+
+- set `DJANGO_DEBUG=1` — debug mode with detailed error pages; if `DJANGO_SECRET_KEY` is
+  empty, a random key is generated per run;
+- or keep debug off and set a key, generated with
+  `python -c "from django.core.management.utils import get_random_secret_key as k; print(k())"`.
+
+Never enable `DJANGO_DEBUG=1` on a server.
 
 SQLite is used by default. To switch to PostgreSQL, fill in the `DB_*` variables in `.env`.
 
 ## Run with Docker
 
 ```bash
-cp .env.example .env
+cp .env.example .env            # then set DJANGO_DEBUG=1 or a secret key, see above
 docker compose up --build
 docker compose exec web python manage.py demo_data
 ```

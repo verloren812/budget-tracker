@@ -201,6 +201,40 @@ class AccountCurrencyTests(TestCase):
             self.assertFalse(form.is_valid())
             self.assertIn("currency", form.errors)
 
+    def test_currency_change_blocked_in_admin(self):
+        """Transfer 100 EUR, then switch the receiver to USD in the admin: must be refused."""
+        Transaction.objects.create(
+            user=self.user, account=self.card, transfer_to=self.cash,
+            kind=Transaction.Kind.TRANSFER, amount=Decimal("100.00"), date=date(2026, 5, 1),
+        )
+        admin_user = User.objects.create_superuser("boss", password="pass12345")
+        self.client.force_login(admin_user)
+        response = self.client.post(
+            reverse("admin:finance_account_change", args=[self.cash.pk]),
+            {
+                "user": self.user.pk, "name": "Cash", "kind": Account.Kind.CARD,
+                "currency": "USD", "initial_balance": "0.00",
+            },
+        )
+        self.assertEqual(response.status_code, 200)  # form redisplayed with an error
+        self.assertIn("currency", response.context["adminform"].form.errors)
+        self.cash.refresh_from_db()
+        self.assertEqual(self.cash.currency, "EUR")
+
+    def test_currency_change_allowed_in_admin_without_transfers(self):
+        admin_user = User.objects.create_superuser("boss", password="pass12345")
+        self.client.force_login(admin_user)
+        response = self.client.post(
+            reverse("admin:finance_account_change", args=[self.cash.pk]),
+            {
+                "user": self.user.pk, "name": "Cash", "kind": Account.Kind.CARD,
+                "currency": "USD", "initial_balance": "0.00",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.cash.refresh_from_db()
+        self.assertEqual(self.cash.currency, "USD")
+
 
 class TransactionListTests(TestCase):
     def setUp(self):

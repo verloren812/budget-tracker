@@ -21,7 +21,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 if not SECRET_KEY:
     if not DEBUG:
         raise ImproperlyConfigured(
-            "DJANGO_SECRET_KEY is not set. Copy .env.example to .env and set a secret key."
+            "DJANGO_SECRET_KEY is not set. Set it in .env, or for local development "
+            "set DJANGO_DEBUG=1 (see README, section Settings)."
         )
     # Local development only: a random key per process, never a shared one in the code.
     # Sessions are reset on every restart, which is fine while developing.

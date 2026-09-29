@@ -109,24 +109,6 @@ class AccountForm(OwnedFormMixin, forms.ModelForm):
             raise forms.ValidationError("An account with this name already exists.")
         return name
 
-    def clean_currency(self):
-        currency = self.cleaned_data["currency"].strip().upper()
-        if self.instance.pk and currency != self.instance.currency:
-            # Changing the currency must not turn existing transfers into cross-currency ones.
-            linked = Transaction.objects.filter(
-                Q(account=self.instance, transfer_to__isnull=False)
-                | Q(transfer_to=self.instance),
-                kind=Transaction.Kind.TRANSFER,
-            )
-            for tx in linked.select_related("account", "transfer_to"):
-                other = tx.transfer_to if tx.account_id == self.instance.pk else tx.account
-                if other.currency != currency:
-                    raise forms.ValidationError(
-                        f"This account has transfers with “{other.name}” ({other.currency}); "
-                        "the currency cannot be changed to a different one."
-                    )
-        return currency
-
 
 class CategoryForm(OwnedFormMixin, forms.ModelForm):
     class Meta:
